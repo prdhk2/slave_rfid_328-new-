@@ -10,6 +10,8 @@ SoftwareSerial mySerial(2, 3); // RX, TX (using non-SPI pins)
 #define RST_PIN 9
 #define SS_PIN 10
 
+int Slave_id = 1;
+
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 MFRC522::MIFARE_Key key;
 
@@ -29,6 +31,7 @@ void handleReadingRFIDState();
 bool readRFIDData();
 void sendDataViaRS485();
 void resetRFIDData(bool resetHardware);
+void debug();  // Debug function declaration
 
 void setup() {
   Serial.begin(9600);
@@ -54,6 +57,7 @@ void loop() {
   if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
     if (readRFIDData()) {
       sendDataViaRS485();
+      debug();  // Call debug after successful read and send
     }
     resetRFIDData(false); // Prepare for next card
   }
@@ -115,11 +119,13 @@ void sendDataViaRS485() {
     digitalWrite(enTxPin, HIGH); // Enable transmitter
     
     // Format: IDDriver|NamaDriver|IDCustomer|NoPolisi|NamaCustomer
-    String data = String(id_driver) + "," + 
-                 nama_driver + "," + 
-                 String(id_customer) + "," + 
-                 no_polisi + "," + 
-                 nama_customer;
+    String data = String(Slave_id) + "," +
+                  String(id_driver) + "," + 
+                  nama_driver + "," + 
+                  String(id_customer) + "," + 
+                  no_polisi + "," + 
+                  nama_customer;
+
     
     // Send with framing
     mySerial.write(0x02); // STX
@@ -140,4 +146,15 @@ void resetRFIDData(bool hardReset) {
         mfrc522.PCD_Init();
         Serial.println(F("RFID hardware reset"));
     }
+}
+
+void debug() {
+  Serial.println("\n--- DEBUG INFORMATION ---");
+  Serial.print("Slave ID: "); Serial.println(Slave_id);
+  Serial.print("ID Driver: "); Serial.println(id_driver);
+  Serial.print("Nama Driver: "); Serial.println(nama_driver);
+  Serial.print("ID Customer: "); Serial.println(id_customer);
+  Serial.print("No Polisi: "); Serial.println(no_polisi);
+  Serial.print("Nama Customer: "); Serial.println(nama_customer);
+  Serial.println("-------------------------\n");
 }
